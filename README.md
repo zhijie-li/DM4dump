@@ -16,9 +16,13 @@ The file "dump.txt" lists the directory structure of the DM4 file. A numbering s
 ##example dump.txt##
 
  |1 <ApplicationBounds> root::ApplicationBounds 32 Bytes   11111111QQQQ 32x1 <0 0 1464 2236> [ 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 b8 05 00 00 00 00 00 00 bc 08 00 00 00 00 00 00]
+ 
  +2 [DocumentObjectList] 5525 (1) root::DocumentObjectList
+ 
   +2.1 [] 5504 (18) root::DocumentObjectList::
+  
    +2.1.1 [AnnotationGroupList] 1201 (1) root::DocumentObjectList::::AnnotationGroupList
+   
     +2.1.1.1 [] 1180 (18) root::DocumentObjectList::::AnnotationGroupList::
  
 ####################
@@ -30,18 +34,31 @@ This program will also dump the information into a YAML file "xxxx.dm4.YAML", wh
 ###example##########
 
 2.1.1.1.15:
+
   data: 00 00 80 3f
+  
   data_format: '6 f 4x1 '
+  
   data_translated: 1
+  
   info: 00 00 00 00 00 00 00 06
+  
   ltname: 11
+  
   ninfo: 1
+  
   parent: 'root::DocumentObjectList::::AnnotationGroupList::'
+  
   path: root::DocumentObjectList::::AnnotationGroupList::::TextOffsetH
+  
   serial: 2.1.1.1.15
+  
   tag: 21
+  
   tlen: 24
+  
   tname: TextOffsetH
+  
 
 ####################
 
@@ -52,15 +69,25 @@ The most interesting entries are copied and are given keys starting with "0_", s
 ###example##########
 
 0_height:
+
   - 3710
+  
 0_scales:
+
   - 1
+  
   - 1
+  
   - 0.148674234747887
+  
   - 0.148674234747887
+  
   - 1
+  
 0_width:
+
   - 3838
+  
 
 
 ####################
