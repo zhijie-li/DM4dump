@@ -12,7 +12,7 @@ For now, data blocks that are larger than 10 MB will be simply skipped. This in 
 DM4dump.pl xxxx.dm4 >dump.txt
 
 The file "dump.txt" lists the directory structure of the DM4 file. A numbering system is also printed so that each node in the DM4 file gets a unique identifier so future use.
-
+<pre>
 ##example dump.txt##
 
  |1 <ApplicationBounds> root::ApplicationBounds 32 Bytes   11111111QQQQ 32x1 <0 0 1464 2236> [ 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 b8 05 00 00 00 00 00 00 bc 08 00 00 00 00 00 00]
@@ -94,3 +94,4 @@ The most interesting entries are copied and are given keys starting with "0_", s
 
 In this example, the Apix is 0.14867 nm/pix (with square pixels).
 
+</pre>
