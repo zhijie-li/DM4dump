@@ -7,7 +7,7 @@ This program will unpack the binary data saved in DM4 files and try to interpret
 For now, data blocks that are larger than 10 MB will be simply skipped. This in most cases only affects two data blocks: the image thumbnail data block and the image/movies data block.
 
 
-Syntax
+## Syntax
 
 DM4dump.pl xxxx.dm4 >dump.txt
 
