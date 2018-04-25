@@ -26,11 +26,12 @@ The file "dump.txt" lists the directory structure of the DM4 file. A numbering s
     +2.1.1.1 [] 1180 (18) root::DocumentObjectList::::AnnotationGroupList::
  
 ####################
-
+</pre>
 
 
 This program will also dump the information into a YAML file "xxxx.dm4.YAML", which contains the data hash. This hash does not use the same hierachical structure as that in the original dm4 file. Each tag/directory in the orginal dm4 file is saved with its path (the "parent" and "path" items, see example below). The aforementioned numbering system is used as the keys to uniquely identify each tag/directory.
 
+<pre>
 ###example##########
 
 2.1.1.1.15:
@@ -61,11 +62,12 @@ This program will also dump the information into a YAML file "xxxx.dm4.YAML", wh
   
 
 ####################
-
+</pre>
 
 
 The most interesting entries are copied and are given keys starting with "0_", so that they will be printed at the top of the YAML file:
 
+<pre>
 ###example##########
 
 0_height:
@@ -92,6 +94,6 @@ The most interesting entries are copied and are given keys starting with "0_", s
 
 ####################
 
-In this example, the Apix is 0.14867 nm/pix (with square pixels).
-
 </pre>
+
+In this example, the Apix is 0.14867 nm/pix (with square pixels).
