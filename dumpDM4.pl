@@ -28,31 +28,45 @@ To dump the image or image slices:
 
 
 Dumping PNG from DDD movies could take quite a while. 
+
 For each slice, a PNG image is produced. Another PNG image that indicates pixels with over 6-rms readings is also produced.
 ----next versions may add options to indicate how many slices to dump.
 
-The log.txt is worth reading. Besides being tighter in space, it has the data represented side-by-side as HEX, ASCII and "translated"-based on the indicated datatype. 
+The log.txt is worth reading. It has the data represented side-by-side as HEX, ASCII and "translated". 
 
 It also generates a YAML file, which contains the data hash (=dict in python).     
 
-The data hash includes nearly everything extracted from the DM4 dir structure except for the (two) data blocks - the thumbnail and the image array. 
-YAML is supposed to be interchangable among languages. 
-
-Some important information can be found in the beginning of the YAML file. Keys starting with '0_'.  -importantly the offsets and lengths of the two datablocks.
+Some important information can be found in the beginning of the YAML file. 
+Keys starting with '0_'.  -importantly the offsets and lengths of the two datablocks.
 
 
 
 To dump to MRC, there is already e2proc2d, which copies the image block and flips the order of rows in each slice. 
 --Origin of images are upper left(L-handed), while CCP4/MRC maps are right-handed. 
 
-Converting float-point image to PNG requires converting the data to int. CCD and DDD data are treated differently, see the processDDD_data() and processCCD_data() functions.
 
-Thumbnail appears to be a grayscale image saved in 8-bit RGBA (datatype 23): <56 56 56 00>  <64 64 64 00>... "Only a few hundred kBytes".
+This program provides two functions processDDD_data() and processCCD_data() for converting CCD and DDD data into 8-bit PNG.
+ -- DDD: direct electron detection device, such as GATAN K2.  
+
+CCD data are simply scaled to 0-255. 
+I use a 6-rms cut-off to remove the few X-ray pixels/instrument noise. These pixels then take the mean value of adjecent "good" pixels.
+The majority (over 99.99%) of the image densities are within the +/- 6-rms range. 
+
+For DDD data, I think they are electron counts with some sort of correction. 
+Since most of the numbers are not too much off the integer values (average deviation = ~0.05 - indicated in output as dev-int, meandev-int, etc. .), 
+I decided to use the nearest int values to replace the original float point numbers. 
+The 6-rms cutoff is still used for removing the X-ray pixels. 
+For the "bad" pixels, their values are replaced by the average of the adjecent 8 pixels & only those with values within the 6-rms range. 
+I could go further to use 4-bit PNG (0..15). But for longer exposure or larger dose images, one may expect legit counts of more than 15. 
+    --Hopefully the zlib compression will take care of the leading zeros.
 
 
-Curiously, DM4 from GATAN K2 camera saves 32-bit float (datatype 2) numbers in the image array with values close to integers, but not exactly integers. 
+
+##############################################################################################
+Curiously, DM4 from GATAN K2 camera saves 32-bit float (datatype 2) numbers in the image array with values CLOSE to integers.
+    --but not integers 
 In each slice the mean < 5 and rms < 2, exactly what one would expect for electron counts for cryo-EM.
-Their values are quite bit off the exact integer values, usually by 5%-10% and can be as large as 30%. 
+Their values are quite bit off the exact integer values, usually by 5%-10% and can be as large as 50% (ie. 0.5). 
 I suspect that this may have something to do with the super-resolution mode.
 
 John Rubinstein has discussed this in a ccpem post. 
@@ -63,23 +77,7 @@ Motioncor2 provides an option to save the maps in 4-bit int.
     --https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4633381/ 
 
 K2 has a internal frame rate of 400 fps. 
-
-
-This program provides two functions processDDD_data() and processCCD_data() for dealing with respectively, 
-the DDD (direct electrondetection device, such as GATAN K2) data and CCD data. 
-
-These functions are used to save these data into 8-bit PNG files. 
-For CCD data, since they went through a phosphor screen, a tapered optical filber cone, a CCD then an A-D converter (ADC), I think it is best to leave the original float values alone. 
-To visualize them in ordinary PNG 8-bit format, I use a 6-rms cut-off to remove the few X-ray pixels/instrument noise. 
-The majority (over 99.99%) of the image densities are within the +/- 6-rms range and are scaled to 0-255 for PNG generation. 
-
-For DDD data, I think they are electron counts with some sort of correction. 
-Since most of the numbers are not too much off the integer values (average devication ~0.05 - indicated in output as dev-int), 
-I decided to use the nearest int values to replace the original float point numbers. 
-The 6-rms cutoff is still used for removing the X-ray pixels. 
-For these pixels, their values are replaced by the average of the adjecent 8 pixels & only those with values within the 6-rms range. 
-I could go further to use 4-bit PNG (0..15). But for longer exposure or larger dose images, one may expect legit counts of more than 15. 
-    --Hopefully the zlib compression will take care of the leading zeros.
+###############################################################################################
 
 
 #####log.txt example, image data  ############################################
