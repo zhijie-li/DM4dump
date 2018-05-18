@@ -9,7 +9,9 @@ For now, data blocks that are larger than 10 MB will be simply skipped. This in 
 ## Reqires
 
 YAML
+
 Compress::Zlib
+
 
 The Zlib is only for PNG generation. If dumping the header information is the only goal, delete the two functions related to save PNG at the end.
 
