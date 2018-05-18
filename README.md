@@ -1,10 +1,11 @@
 # DM4dump
-Dump GATAN DM4 file information into human-readable format.
+
+Dumps GATAN DM4 file information into human-readable format.
 
 The DM4 file format is described in http://www.er-c.org/cbb/info/dmformat/#dm4 
 
-This program will unpack the binary data saved in DM4 files and try to interpret a few most interesting entries such as image dimention, Angstroms per pixle (Apix), etc..
-For now, data blocks that are larger than 10 MB will be simply skipped. This in most cases only affects two data blocks: the image thumbnail data block and the image/movies data block.
+This program will unpack the binary data saved in DM4 files and try to interpret a few most interesting entries such as image dimensions, Angstroms per pixel (Apix), etc..
+
 
 ## Reqirenents
 
@@ -15,18 +16,21 @@ The Zlib is needed only for PNG generation. If dumping the header information is
 
 ## Syntax
 
+To simply dump the "header information" (not really just in the header):
+
    perl dumpDM4.pl 0000.dm4 >log.txt
 
-to dump the thumbnail (not quite useful, except to see a scale bar or to see the original orientation):
+To dump the thumbnail (not quite useful, except to see a scale bar or to see the original orientation):
 
    perl dumpDM4.pl 0000.dm4 --dumpthumbnail >log.txt
 
-to dump the image or image slices:
+To dump the image or image slices:
 
    perl dumpDM4.pl 0000.dm4 --dumpPNG >log.txt
 
 
-The file "dump.txt" lists the directory structure of the DM4 file. A numbering system is also printed so that each node in the DM4 file gets a unique identifier so future use.
+The file "log.txt" lists the directory structure of the DM4 file. A numbering system is also printed so that each node in the DM4 file gets a unique identifier so future use.
+
 <pre>
 ##example dump.txt##
 
