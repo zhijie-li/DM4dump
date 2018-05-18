@@ -7,7 +7,7 @@ The DM4 file format is described in http://www.er-c.org/cbb/info/dmformat/#dm4
 This program will unpack the binary data saved in DM4 files and try to interpret a few most interesting entries such as image dimensions, Angstroms per pixel (Apix), etc..
 
 
-## Reqirenents
+## Reqirements
 
 I tried to minimize its dependencies, but still, this program requires Compress::Zlib and YAML. 
 
