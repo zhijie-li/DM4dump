@@ -12,7 +12,7 @@ This program will unpack the binary data saved in DM4 files and try to interpret
 I tried to minimize its dependencies, but still, this program requires Compress::Zlib and YAML. 
 
 
-The Zlib is needed only for PNG generation. If dumping the header information is the only goal, delete the two functions related to save PNG at the end to remove the dependence on Zlib.
+The Zlib is needed only for PNG generation. If dumping the header information is the only goal, delete the two functions related to save PNG at the end to remove the dependency on Zlib.
 
 ## Syntax
 
