@@ -6,14 +6,12 @@ The DM4 file format is described in http://www.er-c.org/cbb/info/dmformat/#dm4
 This program will unpack the binary data saved in DM4 files and try to interpret a few most interesting entries such as image dimention, Angstroms per pixle (Apix), etc..
 For now, data blocks that are larger than 10 MB will be simply skipped. This in most cases only affects two data blocks: the image thumbnail data block and the image/movies data block.
 
-## Reqires
+## Reqirenents
 
-YAML
-
-Compress::Zlib
+I tried to minimize its dependencies, but still, this program requires Compress::Zlib and YAML. 
 
 
-The Zlib is needed only for PNG generation. If dumping the header information is the only goal, delete the two functions related to save PNG at the end.
+The Zlib is needed only for PNG generation. If dumping the header information is the only goal, delete the two functions related to save PNG at the end to remove the dependence on Zlib.
 
 ## Syntax
 
