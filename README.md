@@ -17,17 +17,17 @@ The Zlib is needed only for PNG generation. If dumping the header information is
 ## Syntax
 
 To simply dump the "header information" (not really just in the header):
-
+<pre>
    perl dumpDM4.pl 0000.dm4 >log.txt
-
+</pre>
 To dump the thumbnail (not quite useful, except to see a scale bar or to see the original orientation):
-
+<pre>
    perl dumpDM4.pl 0000.dm4 --dumpthumbnail >log.txt
-
+</pre>
 To dump the image or image slices:
-
+<pre>
    perl dumpDM4.pl 0000.dm4 --dumpPNG >log.txt
-
+</pre>
 
 The file "log.txt" lists the directory structure of the DM4 file. A numbering system is also printed so that each node in the DM4 file gets a unique identifier so future use.
 
