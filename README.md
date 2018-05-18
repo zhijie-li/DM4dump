@@ -29,7 +29,7 @@ To dump the image or image slices:
    perl dumpDM4.pl 0000.dm4 --dumpPNG >log.txt
 </pre>
 
-The file "log.txt" lists the directory structure of the DM4 file. A numbering system is also printed so that each node in the DM4 file gets a unique identifier so future use.
+The file "log.txt" lists the directory structure of the DM4 file. A numbering system is also printed so that each node in the DM4 file gets a unique identifier.
 
 <pre>
 ##example dump.txt##
