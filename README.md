@@ -12,7 +12,7 @@ This program will unpack the binary data saved in DM4 files and try to interpret
 I tried to minimize its dependencies, but still, this program requires Compress::Zlib and YAML. 
 
 
-The Zlib is needed only for PNG generation. If dumping the header information is the only goal, delete the two functions related to save PNG at the end to drop the dependency on Zlib.
+The Zlib is needed only for PNG generation. If dumping the header information is the only goal, delete the two functions related to save PNG near the end to drop the dependency on Zlib.
 
 ## Syntax
 
@@ -32,8 +32,8 @@ To dump data to MRC/MRCS file:
 <pre>
    perl dumpDM4.pl 0000.dm4 --dumpMRC >log.txt
 </pre>
-This slightly faster than e2proc2d. But there won't be min max mean rms in the header - perl is slow in math. 
 If the dm4 contains more than 1 slices, a .mrcs file is generated. Otherwise a .mrc file is generated.
+This program dumps MRC slightly faster than e2proc2d. But there won't be min max mean rms in the header - perl is slow in math. 
 
 
 The file "log.txt" lists the directory structure of the DM4 file. A numbering system is also printed so that each node in the DM4 file gets a unique identifier.
