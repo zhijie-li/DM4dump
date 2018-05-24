@@ -28,10 +28,11 @@ To dump the image or image slices:
 <pre>
    perl dumpDM4.pl 0000.dm4 --dumpPNG >log.txt
 </pre>
-To dump data to MRC/MRCS file (slightly faster than e2proc2d. But won't generate min max mean rms in header - perl is slow in math):
+To dump data to MRC/MRCS file:
 <pre>
    perl dumpDM4.pl 0000.dm4 --dumpMRC >log.txt
 </pre>
+This slightly faster than e2proc2d. But there won't be min max mean rms in the header - perl is slow in math. 
 If the dm4 contains more than 1 slices, a .mrcs file is generated. Otherwise a .mrc file is generated.
 
 
