@@ -16,7 +16,7 @@ The Zlib is needed only for PNG generation. If dumping the header information is
 
 ## Syntax
 
-To simply dump the "header information" (not really just in the header):
+To simply dump the "header information" (DM4 does not really have a "header"):
 <pre>
    perl dumpDM4.pl 0000.dm4 >log.txt
 </pre>
@@ -28,6 +28,12 @@ To dump the image or image slices:
 <pre>
    perl dumpDM4.pl 0000.dm4 --dumpPNG >log.txt
 </pre>
+To dump data to MRC/MRCS file (slightly faster than e2proc2d, but does not have min max mean rms in header):
+<pre>
+   perl dumpDM4.pl 0000.dm4 --dumpMRC >log.txt
+</pre>
+If the dm4 contains more than 1 slices, a .mrcs file is generated. Otherwise a .mrc file is generated.
+
 
 The file "log.txt" lists the directory structure of the DM4 file. A numbering system is also printed so that each node in the DM4 file gets a unique identifier.
 
