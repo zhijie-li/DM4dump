@@ -28,7 +28,7 @@ To dump the image or image slices:
 <pre>
    perl dumpDM4.pl 0000.dm4 --dumpPNG >log.txt
 </pre>
-To dump data to MRC/MRCS file (slightly faster than e2proc2d, but does not have min max mean rms in header):
+To dump data to MRC/MRCS file (slightly faster than e2proc2d. But won't generate min max mean rms in header - perl is slow in math):
 <pre>
    perl dumpDM4.pl 0000.dm4 --dumpMRC >log.txt
 </pre>
@@ -121,4 +121,4 @@ The most interesting entries are copied and are given keys starting with "0_", s
 
 </pre>
 
-In this example, the Apix is 0.14867 nm/pix (with square pixels).
+In this example, the Apix is 0.14867 nm/pix (imaging CCDs should always have square pixels?).
