@@ -1,6 +1,5 @@
 #!/usr/bin/perl
 
-
 =header
 
 May 2018
@@ -204,6 +203,7 @@ use POSIX;
 my $filename      = '';
 my $dumpPNG       = 0;
 my $dumpthumbnail = 0;
+my $dumpMRC       = 0;
 if ( @ARGV == 0 )
 {
   die "#
@@ -225,6 +225,7 @@ if ( @ARGV > 0 )
     if ( $arg =~ /\.dm4$/i and -e $arg ) { $filename = $arg; }
     if ( $arg eq '--dumpPNG' )       { $dumpPNG       = 1; }
     if ( $arg eq '--dumpthumbnail' ) { $dumpthumbnail = 1; }
+    if ( $arg eq '--dumpMRC' )       { $dumpMRC       = 1; }
   }
 }
 ####real work starts now####
@@ -246,6 +247,7 @@ if ( $byteord == 0 )
   print "(Big Endian)\n!!!this program does not try to read Big Endian image data!!!\n!!!The dump image functions are now deactivated!!!\n";
   $dumpPNG       = 0;
   $dumpthumbnail = 0;
+  $dumpMRC       = 0;
 }
 else { print "(Little Endian)\n"; }
 
@@ -269,6 +271,7 @@ detect_image( \%tag );
 
 savethumbnail( $filename, $fh, \%tag ) if $dumpthumbnail == 1;
 save_image( $filename, $fh, \%tag ) if $dumpPNG == 1;
+to_MRC( $filename, $fh, \%tag ) if $dumpMRC == 1;
 
 close $fh;
 
@@ -745,7 +748,7 @@ sub stat_image
   my ($aref) = (@_);
 
   my ( $min, $max, $dev, $maxdev, $mindev, $meandev, $mean ) = ( $aref->[ 0 ], $aref->[ 0 ], 0, 0, 0, 0, 0 );
-  my $rms = 0;
+  my $rms   = 0;
   my $total = scalar @{ $aref };
 
   my @count = (0) x 65536;
@@ -771,7 +774,7 @@ sub stat_image
   {
     $rmssum += ( $a - $mean ) * ( $a - $mean );
   }
-  $rms = sqrt( $rmssum /  $total  );
+  $rms = sqrt( $rmssum / $total );
 
   return ( $min, $max, $dev, $maxdev, $mindev, $meandev, $mean, \@count, $rms );
 }
@@ -1126,4 +1129,126 @@ sub png_pack
   my $chunk = $tag . $data;
   my $crc   = Compress::Zlib::crc32($chunk);
   return ( pack( "N", length($data) ) . $chunk . pack( "N", $crc ) );
+}
+
+sub to_MRC    #this produces exactly what e2prod produces, but 30% faster---by not running stats on the data
+{
+  my ( $fn, $ifh, $tag_href ) = (@_);
+  my %type_table   = ( 2, 's', 3, 'i', 4, 'v', 5, 'V', 6, 'f', 7, 'd', 8, 'C', 9, 'A', 10, 'C', 11, 'Q', 18, 'A' );
+  my %sizeof_table = ( 2, 2,   3, 4,   4, 2,   5, 4,   6, 4,   7, 8,   8, 1,   9, 1,   10, 1,   11, 8,   18, 1 );
+
+  my @datablocks = keys( %{ $tag_href->{ '0_datablocks' } } );
+  foreach my $data_b (@datablocks)
+  {
+    my $arraytype = $tag_href->{ '0_datablocks' }{ $data_b }{ 'type' };
+    if ( $arraytype eq 'image' )
+    {
+      my @dimensions = @{ $tag_href->{ '0_datablocks' }{ $data_b }{ 'Dimesions' } };
+      my $offset     = $tag_href->{ '0_datablocks' }{ $data_b }{ 'data_offset' };
+      my $datalen    = $tag_href->{ '0_datablocks' }{ $data_b }{ 'data_len' };
+      my ( $w, $h ) = ( $dimensions[ 0 ], $dimensions[ 1 ] );
+      my $slices = 1;
+      if ( scalar(@dimensions) == 3 ) { $slices = $dimensions[ 2 ]; }
+      my $datatype = substr( $tag_href->{ '0_datablocks' }{ $data_b }{ 'data_format' }, 0, 1 );
+      my $datasize = $sizeof_table{ $datatype };
+      my $apix     = $tag_href->{ '0_datablocks' }{ $data_b }{ 'Scale' }[ 0 ];                    #EM cameras have to be sqare or there will be a big problem
+
+      my $fmtchar = $type_table{ $datatype };
+      if ( $datasize * $w * $h * $slices != $datalen )
+      {
+        print "Error! The image array size $datalen != $w x $h x $slices $datasize \n";
+        return;
+      }
+      else { print "The image array size $datalen == $w x $h x $slices x $datasize ($fmtchar)\n"; }
+
+      seek( $fh, $offset, 0 );
+      my @datastr = '' x $h;
+
+      my $ofn = $fn;
+      if   ( scalar(@dimensions) >= 3 ) { $ofn =~ s/\.dm4$/\.mrcs/i; }
+      else                              { $ofn =~ s/\.dm4$/\.mrc/i; }
+
+      open my $ofh, '>', $ofn;
+      my $info = '';
+      $info .= sprintf( "APIX: %.4f \0 Width: %d \0 Height: %d \0", $apix * 10, $w, $h );
+
+      $info .= "Voltage: $tag_href->{ '0_datablocks' }{ $data_b }{ 'Microscope Info::Voltage' }";
+      $info .= " \0";
+      $info .=" Device: $tag_href->{ '0_datablocks' }{ $data_b }{ 'Acquisition::Device::Name' }";
+      $info .= " \0";
+      $info .= "Pixel Size (um): $tag_href->{ '0_datablocks' }{ $data_b }{ 'Acquisition::Frame::CCD::Pixel Size (um)' }";
+      $info .= " \0";
+      $info .=
+        sprintf( "Exposure Time (s): %6.4f", $tag_href->{ '0_datablocks' }{ $data_b }{ 'Acquisition::Frame::Sequence::Exposure Time (ns)' } / 1000000000 );
+      $info .= " \0";
+      $info .= " Continuous Readout: $tag_href->{ '0_datablocks' }{ $data_b }{ 'Acquisition::Parameters::High Level::Continuous Readout' }";
+      $info .= " \0";
+      $info .= "Data bytes: $tag_href->{ '0_datablocks' }{ $data_b }{ 'data_len' } Data type: $tag_href->{ '0_datablocks' }{ $data_b }{ 'type' }";
+      $info .= " \0";
+
+      my $header_str = MRC_header_gen( $w, $h, $slices, $apix, $info );
+      print $ofh $header_str;
+
+      foreach my $s ( 1 .. $slices )
+      {
+        foreach my $line ( 0 .. $h - 1 )
+        {
+          read( $fh, $datastr[ $line ], $w * $datasize );
+
+        }
+        foreach my $line ( reverse( 0 .. $h - 1 ) )
+        {
+
+          print $ofh $datastr[ $line ];
+
+        }
+
+      }
+      close $ofn;
+    }
+  }
+
+}
+
+sub MRC_header_gen
+{
+  my ( $x, $y, $z, $apix, $info ) = (@_);
+
+  ####### prepare header  ################################
+  my $header_block;
+  my $mapmode = 2;
+  my ( $nxstart, $nystart, $nzstart ) = ( -$x / 2, -$y / 2, -$z / 2 );
+  my ( $mx, $my, $mz ) = ( $x, $y, $z );
+  my ( $cellx, $celly, $cellz ) = ( $x * $apix * 10, $y * $apix * 10, $z * $apix * 10 );
+  my ( $alpha, $beta, $gamma ) = ( 90, 90, 90 );
+  my ( $min, $max, $mean, $rms ) = ( 0, 0, 0, 0 );
+  my ( $ispg, $nsymbt ) = ( 0, 0 );
+
+  my @header1_list = (
+                       $x,     $y,     $z,    $mapmode, $nxstart, $nystart, $nzstart, $mx,  $my,  $mz,   $cellx, $celly,
+                       $cellz, $alpha, $beta, $gamma,   1,        2,        3,        $min, $max, $mean, $ispg,  $nsymbt
+  );
+
+  my $head1 = "l l l l l l l l l l f f f f f f l l l f f f l l";
+
+  $header_block = pack $head1, @header1_list;
+  my $extra1 = "\0\0\0\0" x 25;
+
+  #  my $extra1="\0\0\0\0\0\0\0\0MRCO";
+  #my $nversion=20140;
+  #my $extra2="\0\0\0\0"x22;
+  my ( $orix, $oriy, $oriz ) = ( 0, 0, 0 );
+  my $mapstr   = "MAP\0";
+  my $machst   = "DA\0\0";
+  my $nlabel   = 0;
+  my $labelstr = $info . "\0" x ( 800 - length($info) );
+
+  $header_block .= $extra1
+
+    #             .pack('f',$nversion)
+    #            .$extra2
+    . pack( 'f f f', ( $orix, $oriy, $oriz ) ) . $mapstr . $machst . pack( 'f l', $rms, $nlabel ) . $labelstr;
+
+  return $header_block;
+
 }
