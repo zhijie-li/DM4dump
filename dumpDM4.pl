@@ -42,6 +42,8 @@ Keys starting with '0_'.  -importantly the offsets and lengths of the two databl
 
 To dump to MRC, there is already e2proc2d, which copies the image block and flips the order of rows in each slice. 
 --Origin of images are upper left(L-handed), while CCP4/MRC maps are right-handed. 
+However, when the DM4 saves corrupted image array(happened to me, the last few frame are all zeros and this started from middle of some frames), e2proc2d may fail. 
+Thus, this program provides a mechanism to force dump whatever is found in the image array: "--forcedumpMRC"
 
 
 This program provides two functions processDDD_data() and processCCD_data() for converting CCD and DDD data into 8-bit PNG.
@@ -62,11 +64,8 @@ I could go further to use 4-bit PNG (0..15). But for longer exposure or larger d
 
 
 ##############################################################################################
-Curiously, DM4 from GATAN K2 camera saves 32-bit float (datatype 2) numbers in the image array with values CLOSE to integers.
-    --but not integers 
-In each slice the mean < 5 and rms < 2, exactly what one would expect for electron counts for cryo-EM.
-Their values are quite bit off the exact integer values, usually by 5%-10% and can be as large as 50% (ie. 0.5). 
-I suspect that this may have something to do with the super-resolution mode.
+Curiously, DM4 from GATAN K2 camera saves 32-bit float (datatype 2) numbers in the image array with values CLOSE to integers. Most of these are raw electron counts multiplied by the gain (The dark image must be all zero). 
+~1000 pixels in each image do not follow this. The reason is still under investigation.
 
 John Rubinstein has discussed this in a ccpem post. 
 
@@ -204,6 +203,7 @@ my $filename      = '';
 my $dumpPNG       = 0;
 my $dumpthumbnail = 0;
 my $dumpMRC       = 0;
+my $forcedumpMRC  = 0;
 if ( @ARGV == 0 )
 {
   die "#
@@ -226,6 +226,9 @@ if ( @ARGV > 0 )
     if ( $arg eq '--dumpPNG' )       { $dumpPNG       = 1; }
     if ( $arg eq '--dumpthumbnail' ) { $dumpthumbnail = 1; }
     if ( $arg eq '--dumpMRC' )       { $dumpMRC       = 1; }
+    if ( $arg eq '--forcedumpMRC' )  { $dumpMRC       = 0; 
+                                       $forcedumpMRC  = 1;}
+    
   }
 }
 ####real work starts now####
@@ -264,7 +267,7 @@ $tag{ '0_root' }{ 'ntags' }   = $ntags;
 
 foreach my $i ( 1 .. $ntags )
 {
-  readroottag( $fh, \%tag, $i );
+  readroottag( $fh,$filename, \%tag, $i );
 }
 
 detect_image( \%tag );
@@ -286,7 +289,7 @@ close $fh_YAML;
 
 sub readroottag
 {
-  my ( $fh, $tag_href, $s ) = (@_);
+  my ( $fh,$filename, $tag_href, $s ) = (@_);
 
   #  my $pointer=tell $fh;
   #  print "current offset in file: $pointer";
@@ -294,8 +297,8 @@ sub readroottag
   my $tag   = read_i1($fh);
   my $s_tag = "root";
   if ( $tag == 0 )  { return 0; }                                      #EOF
-  if ( $tag == 20 ) { read_dir( $fh, $tag_href, $s_tag, 1, "$s" ); }
-  if ( $tag == 21 ) { read_tag( $fh, $tag_href, $s_tag, 1, "$s" ); }
+  if ( $tag == 20 ) { read_dir( $fh,$filename, $tag_href, $s_tag, 1, "$s" ); }
+  if ( $tag == 21 ) { read_tag( $fh,$filename, $tag_href, $s_tag, 1, "$s" ); }
 
 }
 
@@ -334,7 +337,7 @@ Overall tag structure
 
 sub read_dir
 {
-  my ( $fh, $tag_href, $parent, $level, $s ) = (@_);
+  my ( $fh,$filename, $tag_href, $parent, $level, $s ) = (@_);
   my $tag    = 20;
   my $ltname = read_i2be($fh);
   my $tname  = read_str( $fh, $ltname );
@@ -365,11 +368,11 @@ sub read_dir
       if ( $next_tag == 0 ) { return; }    #EOF
       elsif ( $next_tag == 20 )
       {
-        read_dir( $fh, $tag_href, $s_tag, $level + 1, "$s.$i" );
+        read_dir( $fh,$filename, $tag_href, $s_tag, $level + 1, "$s.$i" );
       }                                    #EOF
       elsif ( $next_tag == 21 )
       {
-        read_tag( $fh, $tag_href, $s_tag, $level + 1, "$s.$i" );
+        read_tag( $fh,$filename, $tag_href, $s_tag, $level + 1, "$s.$i" );
       }                                    #EOF
       else { print printhex($next_tag); }  #some error must have occured
     }
@@ -379,7 +382,7 @@ sub read_dir
 
 sub read_tag
 {
-  my ( $fh, $tag_href, $parent, $level, $s ) = (@_);
+  my ( $fh,$filename, $tag_href, $parent, $level, $s ) = (@_);
   my $tag    = 21;
   my $ltname = read_i2be($fh);
   my $tname  = read_str( $fh, $ltname );
@@ -442,14 +445,33 @@ sub read_tag
   my $data        = '';
   my $data_offset = tell($fh);
   my $data_flag   = 0;
-  if ( $datalen <= 1024 * 1024 )
-  {
-    $data = read_str( $fh, $datalen );
+
+  if($datalen>4*3000*3000 and $forcedumpMRC==1){ #dump image data rightaway
+      
+      $data = read_str( $fh, $datalen );
+      my $w = 3838; #this number does not appear until the image data finishes, so have to be put manually
+      my $h = 3710;
+      my $apix=1.45; #this number is available, but just for simplicity...
+      my $info='';
+      my $slices = $datalen/4/$w/$h;
+      my $header_str = MRC_header_gen( $w, $h, $slices, $apix, $info );
+      print "\n\nforce dump MRC... $datalen bytes, $w x $h, $slices slices apix: $apix. \n The above values are hard-coded in this program, assuming K2 camera (corrupt files won't have width or height). \n If incorrect, find and modify them around line 450 - 460 in program\n\n\n";
+      open my $dump_fh,'>',"$filename.forcedump.mrcs";
+      
+      print $dump_fh $header_str,$data; #same order as the orginal, so will look vertically inverted compared to e2proc2d
+      close $dump_fh;
+
+
+      seek( $fh, ( $data_offset  ), 0 );#rewind 
+      }
+  
+  if ( $datalen <= 1024 * 1024)  {    
+    $data = read_str( $fh, $datalen );  
   }
-  else
+  else  
   {
     $data = read_str( $fh, 1024 );
-    seek( $fh, ( $datalen - 1024 ), 1 );
+    seek( $fh, ( $datalen + $data_offset ), 0 ); #jump to end of data
   }
 
   my $types      = '';
@@ -457,6 +479,7 @@ sub read_tag
   my $data_ascii = '';
   my $hexdata    = '';
   print ' ' x $level, "|$s '$s_tag' $datalen bytes $data_class |",, @datatype, "|$form ${unit_size}x$units $narray";
+
 
   #only print if data is less than 10K
   if ( $datalen <= 1024 )
@@ -476,6 +499,8 @@ sub read_tag
 
     print "[first 256 bytes:] <$data_trans> ($data_ascii) [ $hexdata]";
     print "\n                 [LARGE_DATA_BLOCK  $form$unit_size x $units ]";
+    
+    
   }
   print "\n";
 
@@ -1221,7 +1246,7 @@ sub MRC_header_gen
   my ( $mx, $my, $mz ) = ( $x, $y, $z );
   my ( $cellx, $celly, $cellz ) = ( $x * $apix * 10, $y * $apix * 10, $z * $apix * 10 );
   my ( $alpha, $beta, $gamma ) = ( 90, 90, 90 );
-  my ( $min, $max, $mean, $rms ) = ( 0, 0, 0, 0 );
+  my ( $min, $max, $mean, $rms ) = ( 0, 0, 0, -1 );
   my ( $ispg, $nsymbt ) = ( 0, 0 );
 
   my @header1_list = (
@@ -1252,3 +1277,4 @@ sub MRC_header_gen
   return $header_block;
 
 }
+
